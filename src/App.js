@@ -25,7 +25,8 @@ export default class App extends Component {
     vocabIndex: 0,
     revealDetails: false,
     currentWord: null,
-    hasFailed: false
+    hasFailed: false,
+    showRomaji: false
   }
 
   componentDidMount() {
@@ -33,6 +34,7 @@ export default class App extends Component {
     this.onKeyDown = this.onKeyDown.bind(this);
     this.onLessonChange = this.onLessonChange.bind(this);
     this.setLesson = this.setLesson.bind(this);
+    this.onRomajiChecked = this.onRomajiChecked.bind(this);
 
     this.setLesson();
   }
@@ -149,29 +151,43 @@ export default class App extends Component {
     });
   }
 
+  onRomajiChecked(e) {
+    this.updateState({
+      showRomaji: !this.state.showRomaji
+    });
+  }
+
   render() {
     const vocab = this.state.currentWord;
     if(!vocab) return <div></div>;
 
     return (
       <div className="app">
-        <select className="lesson-select" onChange={e => this.onLessonChange(e)}>
-          {LESSONS.map(x => {
-            return <option key={x} value={x}>Lesson {x}</option>
-          })}
-        </select>
         <div className="centered">
+          <select className="lesson-select" onChange={e => this.onLessonChange(e)}>
+            {LESSONS.map(x => {
+              return <option key={x} value={x}>Lesson {x}</option>
+            })}
+          </select>
+          &nbsp;&nbsp;
+          <input type="checkbox" name="romaji" defaultChecked={false} checked={this.state.showRomaji} onChange={e => this.onRomajiChecked(e)}></input>
+          <label for="romaji"> Show Romaji Pronounciations</label>
+          <hr></hr>
+        </div>
+        <div className="the-app centered">
             <p>{1 + this.state.currentQueue.length} Left</p>
             <h1 className="centered kanji">{vocab.kanji == ""? vocab.kana : vocab.kanji}</h1>
             {this.state.revealDetails? <div>
+              <p className="help-text">pronounciation</p>
               {vocab.kanji == ""? 
-              <h2 className="pronounciation">{vocab.romaji.join(", ")}</h2> : 
-              <h2 className="pronounciation">{vocab.kana}<br></br>{vocab.romaji.join(", ")}</h2>}
+              (this.state.showRomaji? <h2 className="pronounciation">{vocab.romaji.join(", ")}</h2> : undefined) : 
+              <h2 className="pronounciation">{vocab.kana}<br></br>{this.state.showRomaji? vocab.romaji.join(", ") : undefined}</h2>}
+              <p className="help-text">meaning</p>
               <h2 className="english">{vocab.english.join(", ")}</h2>
             </div> : undefined }
         </div>
         <div className="centered">
-          Enter the romaji that corresponds to this word
+          <p className="help-text">Enter the romaji that corresponds to this word</p>
           <input className="main-textbox" type="text" onKeyDown={e => this.onKeyDown(e)}></input>
         </div>
       </div>

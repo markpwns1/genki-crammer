@@ -97,3 +97,26 @@ h1.kanji {
   margin: 5px;
   padding: 5px;
 }
+
+.help-text {
+  font-size: 12px;
+  /* font-style: italic; */
+  color: gray;
+  margin-bottom: 5px;
+}
+
+.pronounciation, .english {
+  margin-top: 5px;
+}
+
+.english {
+  margin-bottom: 30px !important;
+}
+
+.the-app {
+  margin-top: 50px !important;
+}
+
+hr {
+  width: 50%;
+}
