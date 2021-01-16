@@ -1,38 +1,99 @@
-.App {
+@import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+* {
+    font-family: 'Roboto', sans-serif;
+}
+
+input[type=button] {
+    margin: 5px;
+    padding: 5px;
+    background-color: white;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(128, 128, 128);
+    /* box-shadow: 0px 0px 5px rgb(128, 128, 128); */
+    min-width: 100px;
+}
+
+input[type=button]:hover {
+    border-color: rgb(142, 178, 194);
+    cursor: pointer;
+}
+
+input[type=button]:active {
+    background-color: rgb(200, 219, 243);
+    border-color: rgb(142, 178, 194);
+    cursor: pointer;
+}
+
+input[type=text] {
+    margin: 5px;
+    padding: 5px;
+    background-color: white;
+    border-radius: 5px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: rgb(128, 128, 128);
+    /* box-shadow: 0px 0px 5px rgb(128, 128, 128); */
+}
+
+input[type=text]:hover {
+    border-color: rgb(142, 178, 194);
+}
+
+input[type=text]:active {
+    border-color: white;
+    /* box-shadow: 0px 0px 0px rgb(128, 128, 128); */
+}
+
+input[type=text]:focus {
+    border-color: rgb(142, 178, 194);
+}
+
+.info {
+    margin: 5px;
+}
+
+/* Copied from https://stackoverflow.com/questions/4151743/how-can-i-change-the-thickness-of-my-hr-tag */
+hr {
+    border: none;
+    height: 1px;
+    /* Set the hr color */
+    color: gray; /* old IE */
+    background-color: gray; /* Modern Browsers */
+}
+
+.centered {
+    margin: auto;
+    text-align: center;
+}
+
+/*
+=============================
+*/
+
+.app {
+  width: 50vw;
+  margin: auto;
+  margin-top: 10vh;
+}
+
+h1.kanji {
   text-align: center;
+  font-weight: normal;
+  font-size: 48px;
+  padding-bottom: 10px !important;
+  margin-bottom: 10px !important;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.main-textbox {
+  width: 200px;
+  text-align: center;
+  margin: auto;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.lesson-select {
+  margin: 5px;
+  padding: 5px;
 }

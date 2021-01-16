@@ -1,25 +1,180 @@
+// https://www.csus.edu/indiv/s/sheaa/projects/genki/vocab_main.html
+
 import logo from './logo.svg';
 import './App.css';
+import { load } from 'cheerio';
+import { Component } from "react";
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const hepburn = require("hepburn");
+
+const CROSS_ORIGIN_HACK = "https://cors-anywhere.herokuapp.com/";
+const SCRAP_URL = "ohelo.org/japn/lang/genki_vocab_table.php?lesson=";
+
+const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
+
+const lessonContents = {
+
+};
+
+export default class App extends Component {
+
+  state = { 
+    lessonNumber: 1,
+    vocabItems: [ ],
+    currentQueue: [ ],
+    vocabIndex: 0,
+    revealDetails: false,
+    currentWord: null,
+    hasFailed: false
+  }
+
+  componentDidMount() {
+    this.updateState = this.updateState.bind(this);
+    this.onKeyDown = this.onKeyDown.bind(this);
+    this.onLessonChange = this.onLessonChange.bind(this);
+    this.setLesson = this.setLesson.bind(this);
+
+    this.setLesson();
+  }
+
+  shuffleArray(array) {
+    let a = [ ...array ];
+    for (var i = a.length - 1; i > 0; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var temp = a[i];
+        a[i] = a[j];
+        a[j] = temp;
+    }
+    return a
+  }
+
+  setLesson() {
+    fetch(CROSS_ORIGIN_HACK + (SCRAP_URL + this.state.lessonNumber))
+    .then(x => x.text())
+    .then(x => {
+      let vocabItems = [ ];
+      const $ = load(x);
+      const table = $("tbody");
+      const rows = table.children();
+      const rowCount = rows.length;
+      for (let i = 1; i < rowCount; i++) {
+        const row = rows.eq(i);
+        let vocab;
+        if(row.children().length == 3) {
+          vocab = {
+            kana: row.children().eq(0).text().trim(),
+            kanji: row.children().eq(1).text().trim(),
+            english: row.children().eq(2).text().split(/,|;|\//).map(x => x.trim()),
+          };
+        }
+        else {
+          vocab = {
+            kana: row.children().eq(0).text().trim(),
+            kanji: row.children().eq(1).text().trim(),
+            romaji: row.children().eq(2).text().split(/,|;|\//).map(x => x.trim().toLowerCase()),
+            english: row.children().eq(3).text().split(/,|;|\//).map(x => x.trim()),
+          };
+        }
+        
+        vocab.romaji = vocab.kana.split("／").map(x => hepburn.fromKana(x).trim().toLowerCase()
+          .replace(/ō/, "ou")
+          .replace(/ā/, "aa")
+          .replace(/ē/, "ei")
+          .replace(/ū/, "uu")
+          .replace(/ī/, "ii"));
+        vocabItems.push(vocab);
+      }
+
+      this.updateState({
+        currentQueue: this.shuffleArray(vocabItems),
+        vocabItems: vocabItems,
+        vocabIndex: this.random(vocabItems.length),
+        revealDetails: false
+      }, () => {
+        this.updateState({
+          currentWord: this.state.currentQueue.pop()
+        });
+      });
+    });
+  }
+
+  random(max) {
+    return Math.floor(Math.random() * Math.floor(max));
+  }
+
+  updateState(newStates, callback) {
+    const s = {
+      ...this.state,
+      ...newStates
+    };
+
+    this.setState(s, callback);
+  }
+
+  onKeyDown(e) {
+    // console.log(e);
+    if(e.key === "Enter") {
+      if(this.state.currentWord.romaji.map(x => x
+          .replace(/[^0-9a-z\s]/gi, '')
+          .replace("see", "sei")
+          .replace("oo", "ou"))
+        .includes(e.target.value.replace(/[^0-9a-z\s]/gi, '').toLowerCase()
+          .replace("see", "sei")
+          .replace("oo", "ou"))) {
+
+        if(this.state.hasFailed)
+          this.state.currentQueue.unshift(this.state.currentWord);
+
+        this.updateState({
+          currentWord: this.state.currentQueue.pop(),
+          revealDetails: false,
+          hasFailed: false
+        });
+      }
+      else {
+        this.updateState({
+          revealDetails: true,
+          hasFailed: true
+        });
+      }
+      e.target.value = "";
+    }
+  }
+
+  onLessonChange(e) {
+    this.updateState({
+      lessonNumber: e.target.value
+    }, () => {
+      this.setLesson();
+    });
+  }
+
+  render() {
+    const vocab = this.state.currentWord;
+    if(!vocab) return <div></div>;
+
+    return (
+      <div className="app">
+        <select className="lesson-select" onChange={e => this.onLessonChange(e)}>
+          {LESSONS.map(x => {
+            return <option key={x} value={x}>Lesson {x}</option>
+          })}
+        </select>
+        <div className="centered">
+            <p>{1 + this.state.currentQueue.length} Left</p>
+            <h1 className="centered kanji">{vocab.kanji == ""? vocab.kana : vocab.kanji}</h1>
+            {this.state.revealDetails? <div>
+              {vocab.kanji == ""? 
+              <h2 className="pronounciation">{vocab.romaji.join(", ")}</h2> : 
+              <h2 className="pronounciation">{vocab.kana}<br></br>{vocab.romaji.join(", ")}</h2>}
+              <h2 className="english">{vocab.english.join(", ")}</h2>
+            </div> : undefined }
+        </div>
+        <div className="centered">
+          Enter the romaji that corresponds to this word
+          <input className="main-textbox" type="text" onKeyDown={e => this.onKeyDown(e)}></input>
+        </div>
+      </div>
+    );
+  }
 }
-
-export default App;
