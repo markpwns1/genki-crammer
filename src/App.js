@@ -51,6 +51,12 @@ export default class App extends Component {
   }
 
   setLesson() {
+
+    this.updateState({
+      vocabItems: [ ],
+      currentWord: null
+    });
+
     fetch(CROSS_ORIGIN_HACK + (SCRAP_URL + this.state.lessonNumber))
     .then(x => x.text())
     .then(x => {
@@ -115,23 +121,34 @@ export default class App extends Component {
 
   onKeyDown(e) {
     // console.log(e);
+    // "hui".repl
     if(e.key === "Enter") {
       if(this.state.currentWord.romaji.map(x => x
           .replace(/[^0-9a-z\s]/gi, '')
-          .replace("see", "sei")
-          .replace("oo", "ou"))
+          .replace(/ee/gi, "ei")
+          .replace(/oo/gi, "ou"))
         .includes(e.target.value.replace(/[^0-9a-z\s]/gi, '').toLowerCase()
-          .replace("see", "sei")
-          .replace("oo", "ou"))) {
+          .replace(/ee/g, "ei")
+          .replace(/oo/g, "ou"))) {
 
         if(this.state.hasFailed)
           this.state.currentQueue.unshift(this.state.currentWord);
 
-        this.updateState({
-          currentWord: this.state.currentQueue.pop(),
-          revealDetails: false,
-          hasFailed: false
-        });
+        if(this.state.currentQueue.length == 0) {
+          this.updateState({
+            lessonNumber: this.state.lessonNumber + 1
+          }, () => {
+            this.setLesson();
+          });
+        }
+        else {
+          this.updateState({
+            currentWord: this.state.currentQueue.pop(),
+            revealDetails: false,
+            hasFailed: false
+          });
+        }
+        
       }
       else {
         this.updateState({
@@ -159,18 +176,20 @@ export default class App extends Component {
 
   render() {
     const vocab = this.state.currentWord;
-    if(!vocab) return <div></div>;
+    if(!vocab) return <div className="app centered">
+      Fetching vocabulary... This may take a while.
+    </div>;
 
     return (
       <div className="app">
         <div className="centered">
-          <select className="lesson-select" onChange={e => this.onLessonChange(e)}>
+          <select className="lesson-select" onChange={e => this.onLessonChange(e)} value={this.state.lessonNumber}>
             {LESSONS.map(x => {
               return <option key={x} value={x}>Lesson {x}</option>
             })}
           </select>
           &nbsp;&nbsp;
-          <input type="checkbox" name="romaji" defaultChecked={false} checked={this.state.showRomaji} onChange={e => this.onRomajiChecked(e)}></input>
+          <input type="checkbox" name="romaji" checked={this.state.showRomaji} onChange={e => this.onRomajiChecked(e)}></input>
           <label for="romaji"> Show Romaji Pronounciations</label>
           <hr></hr>
         </div>
@@ -178,7 +197,7 @@ export default class App extends Component {
             <p>{1 + this.state.currentQueue.length} Left</p>
             <h1 className="centered kanji">{vocab.kanji == ""? vocab.kana : vocab.kanji}</h1>
             {this.state.revealDetails? <div>
-              <p className="help-text">pronounciation</p>
+              {(vocab.kanji != "" || this.state.showRomaji)? <p className="help-text">pronounciation</p> : undefined}
               {vocab.kanji == ""? 
               (this.state.showRomaji? <h2 className="pronounciation">{vocab.romaji.join(", ")}</h2> : undefined) : 
               <h2 className="pronounciation">{vocab.kana}<br></br>{this.state.showRomaji? vocab.romaji.join(", ") : undefined}</h2>}
