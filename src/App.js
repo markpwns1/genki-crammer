@@ -119,17 +119,21 @@ export default class App extends Component {
     this.setState(s, callback);
   }
 
+  strip(w) {
+    return w
+    .trim()
+    .toLowerCase()
+    .replace(/[^0-9a-z]/gi, '')
+    .replace(/ee/gi, "ei")
+    .replace(/oo/gi, "ou")
+  }
+
   onKeyDown(e) {
     // console.log(e);
     // "hui".repl
     if(e.key === "Enter") {
-      if(this.state.currentWord.romaji.map(x => x
-          .replace(/[^0-9a-z\s]/gi, '')
-          .replace(/ee/gi, "ei")
-          .replace(/oo/gi, "ou"))
-        .includes(e.target.value.replace(/[^0-9a-z\s]/gi, '').toLowerCase()
-          .replace(/ee/g, "ei")
-          .replace(/oo/g, "ou"))) {
+      if(this.state.currentWord.romaji.map(x => this.strip(x))
+        .includes(this.strip(e.target.value))) {
 
         if(this.state.hasFailed)
           this.state.currentQueue.unshift(this.state.currentWord);
@@ -191,6 +195,8 @@ export default class App extends Component {
           &nbsp;&nbsp;
           <input type="checkbox" name="romaji" checked={this.state.showRomaji} onChange={e => this.onRomajiChecked(e)}></input>
           <label for="romaji"> Show Romaji Pronounciations</label>
+          {/* <input type="checkbox" name="romaji" checked={this.state.showRomaji} onChange={e => this.onRomajiChecked(e)}></input>
+          <label for="romaji"> Study Hiragana Vocabulary</label> */}
           <hr></hr>
         </div>
         <div className="the-app centered">
