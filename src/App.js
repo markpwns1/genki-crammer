@@ -9,6 +9,7 @@ const hepburn = require("hepburn");
 
 const CROSS_ORIGIN_HACK = "https://cors-anywhere.herokuapp.com/";
 const SCRAP_URL = "ohelo.org/japn/lang/genki_vocab_table.php?lesson=";
+const JISHO_SEARCH = "https://jisho.org/search?keyword=";
 
 const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
 
@@ -35,6 +36,8 @@ export default class App extends Component {
     this.onLessonChange = this.onLessonChange.bind(this);
     this.setLesson = this.setLesson.bind(this);
     this.onRomajiChecked = this.onRomajiChecked.bind(this);
+    this.removeKanaFromQueue = this.removeKanaFromQueue.bind(this);
+    this.onKanjiClicked = this.onKanjiClicked.bind(this);
 
     this.setLesson();
   }
@@ -84,12 +87,20 @@ export default class App extends Component {
           };
         }
         
+        // vocab.romaji = vocab.kana.split("／").map(x => hepburn.fromKana(x).trim().toLowerCase()
+        //   .replace(/ō/gi, "ou")
+        //   .replace(/ā/gi, "aa")
+        //   .replace(/ē/gi, "ei")
+        //   .replace(/ū/gi, "uu")
+        //   .replace(/ī/gi, "ii"));
+
         vocab.romaji = vocab.kana.split("／").map(x => hepburn.fromKana(x).trim().toLowerCase()
-          .replace(/ō/, "ou")
-          .replace(/ā/, "aa")
-          .replace(/ē/, "ei")
-          .replace(/ū/, "uu")
-          .replace(/ī/, "ii"));
+          .replace(/ō/gi, "ou")
+          .replace(/ā/gi, "aa")
+          .replace(/ē/gi, "ei")
+          .replace(/ū/gi, "uu")
+          .replace(/ī/gi, "ii"));
+
         vocabItems.push(vocab);
       }
 
@@ -140,7 +151,7 @@ export default class App extends Component {
 
         if(this.state.currentQueue.length == 0) {
           this.updateState({
-            lessonNumber: this.state.lessonNumber + 1
+            lessonNumber: (this.state.lessonNumber + 1)
           }, () => {
             this.setLesson();
           });
@@ -172,9 +183,26 @@ export default class App extends Component {
     });
   }
 
-  onRomajiChecked(e) {
+  onRomajiChecked() {
     this.updateState({
       showRomaji: !this.state.showRomaji
+    });
+  }
+
+  removeKanaFromQueue() {
+    this.updateState({
+      currentQueue: this.state.currentQueue.filter(x => x.kanji.trim() != "")
+    });
+  }
+
+  onKanjiClicked(kanjiText) {
+    if(this.state.revealDetails) {
+      window.open(JISHO_SEARCH + kanjiText);
+    }
+
+    this.updateState({
+      revealDetails: true,
+      hasFailed: true
     });
   }
 
@@ -183,6 +211,8 @@ export default class App extends Component {
     if(!vocab) return <div className="app centered">
       Fetching vocabulary... This may take a while.
     </div>;
+
+    const kanjiText = vocab.kanji == ""? vocab.kana : vocab.kanji;
 
     return (
       <div className="app">
@@ -193,15 +223,19 @@ export default class App extends Component {
             })}
           </select>
           &nbsp;&nbsp;
+          <input type="button" value="Kanji Only" onClick={() => this.removeKanaFromQueue()}></input>
+          <br></br>
           <input type="checkbox" name="romaji" checked={this.state.showRomaji} onChange={e => this.onRomajiChecked(e)}></input>
           <label for="romaji"> Show Romaji Pronounciations</label>
-          {/* <input type="checkbox" name="romaji" checked={this.state.showRomaji} onChange={e => this.onRomajiChecked(e)}></input>
-          <label for="romaji"> Study Hiragana Vocabulary</label> */}
           <hr></hr>
         </div>
         <div className="the-app centered">
             <p>{1 + this.state.currentQueue.length} Left</p>
-            <h1 className="centered kanji">{vocab.kanji == ""? vocab.kana : vocab.kanji}</h1>
+            <h1 className="centered kanji">
+              <a href="#" onClick={() => this.onKanjiClicked(kanjiText)}>
+                {kanjiText}
+              </a>
+            </h1>
             {this.state.revealDetails? <div>
               {(vocab.kanji != "" || this.state.showRomaji)? <p className="help-text">pronounciation</p> : undefined}
               {vocab.kanji == ""? 
