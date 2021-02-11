@@ -7,8 +7,8 @@ import { Component } from "react";
 
 const hepburn = require("hepburn");
 
-const CROSS_ORIGIN_HACK = "https://cors-anywhere.herokuapp.com/";
-const SCRAP_URL = "ohelo.org/japn/lang/genki_vocab_table.php?lesson=";
+const CROSS_ORIGIN_HACK = "https://api.codetabs.com/v1/proxy?quest=";
+const SCRAP_URL = "http://ohelo.org/japn/lang/genki_vocab_table.php?lesson=";
 const JISHO_SEARCH = "https://jisho.org/search?keyword=";
 
 const LESSONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23];
@@ -21,6 +21,7 @@ export default class App extends Component {
 
   state = { 
     lessonNumber: 1,
+    partNumber: 0,
     vocabItems: [ ],
     currentQueue: [ ],
     vocabIndex: 0,
@@ -38,7 +39,7 @@ export default class App extends Component {
     this.onRomajiChecked = this.onRomajiChecked.bind(this);
     this.removeKanaFromQueue = this.removeKanaFromQueue.bind(this);
     this.onKanjiClicked = this.onKanjiClicked.bind(this);
-
+    this.onPartChange = this.onPartChange.bind(this);
     this.setLesson();
   }
 
@@ -60,9 +61,11 @@ export default class App extends Component {
       currentWord: null
     });
 
-    fetch(CROSS_ORIGIN_HACK + (SCRAP_URL + this.state.lessonNumber))
+    console.log("Fetching Kanji from website...");
+    fetch(CROSS_ORIGIN_HACK + (encodeURI(SCRAP_URL + this.state.lessonNumber)))
     .then(x => x.text())
     .then(x => {
+      console.log("Fetched!");
       let vocabItems = [ ];
       const $ = load(x);
       const table = $("tbody");
@@ -104,8 +107,11 @@ export default class App extends Component {
         vocabItems.push(vocab);
       }
 
+      vocabItems = this.shuffleArray(vocabItems);
+
       this.updateState({
-        currentQueue: this.shuffleArray(vocabItems),
+        partNumber: 0,
+        currentQueue: vocabItems.slice(0, 10),
         vocabItems: vocabItems,
         vocabIndex: this.random(vocabItems.length),
         revealDetails: false
@@ -150,11 +156,24 @@ export default class App extends Component {
           this.state.currentQueue.unshift(this.state.currentWord);
 
         if(this.state.currentQueue.length == 0) {
-          this.updateState({
-            lessonNumber: (this.state.lessonNumber + 1)
-          }, () => {
-            this.setLesson();
-          });
+          if(this.state.partNumber * 10 >= this.state.vocabItems.length) {
+            this.updateState({
+              lessonNumber: (parseInt(this.state.lessonNumber) + 1)
+            }, () => {
+              this.setLesson();
+            });
+          }
+          else {
+            const nextState = parseInt(this.state.partNumber) + 1;
+            this.updateState({
+              partNumber: nextState,
+              currentQueue: this.state.vocabItems.slice(nextState * 10, (nextState + 1) * 10)
+            }, () => {
+              this.updateState({
+                currentWord: this.state.currentQueue.pop()
+              });
+            });
+          }
         }
         else {
           this.updateState({
@@ -177,9 +196,20 @@ export default class App extends Component {
 
   onLessonChange(e) {
     this.updateState({
-      lessonNumber: e.target.value
+      lessonNumber: parseInt(e.target.value)
     }, () => {
       this.setLesson();
+    });
+  }
+
+  onPartChange(e) {
+    this.updateState({
+      partNumber: e.target.value,
+      currentQueue: this.state.vocabItems.slice(e.target.value * 10, (parseInt(e.target.value) + 1) * 10)
+    }, () => {
+      this.updateState({
+        currentWord: this.state.currentQueue.pop()
+      });
     });
   }
 
@@ -221,6 +251,18 @@ export default class App extends Component {
             {LESSONS.map(x => {
               return <option key={x} value={x}>Lesson {x}</option>
             })}
+          </select>
+          &nbsp;&nbsp;
+          <select className="part-select" onChange={e => this.onPartChange(e)} value={this.state.partNumber}>
+            {
+              (() => {
+                let a = [ ];
+                for (let i = 0; i * 10 < this.state.vocabItems.length; i++) {
+                  a.push(<option key={i} value={i}>Part {i + 1}</option>);
+                }
+                return a;
+              })()
+            }
           </select>
           &nbsp;&nbsp;
           <input type="button" value="Kanji Only" onClick={() => this.removeKanaFromQueue()}></input>
